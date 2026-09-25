@@ -1,4 +1,4 @@
-# Toolbox AI
+# Toolbox - AI
 
 This repository is the source of truth for personal Agent Skills and related
 developer tooling. Each skill lives in `skills/<skill-name>/` and can be enabled

@@ -1,4 +1,4 @@
-# Toolbox AI repository instructions
+# Toolbox - AI repository instructions
 
 - Treat `skills/<name>/` as the canonical source for every personal Agent Skill.
 - Keep the skill directory name equal to the `name` in its `SKILL.md`
