@@ -3,14 +3,15 @@ name: ship
 description: >-
   Use when the user asks to ship the current session's changes: commit them,
   land them on the repository mainline, push, deploy when the project defines a
-  deployment, clean up safely, and archive the completed Codex task afterward —
-  for example "ship", "ship it", "отгрузи", "отгрузи и задеплой", or "влей,
-  запушь и выкати".
+  deployment, clean up safely, and archive the completed task when the host
+  supports task archiving — for example "ship", "ship it", "отгрузи", "отгрузи
+  и задеплой", or "влей, запушь и выкати".
 ---
 
 # Ship
 
-Take the changes made in this Codex session all the way to a verified deployment.
+Take the changes made in this coding-agent session all the way to a verified
+deployment.
 Invoking this skill authorizes the relevant test run, commit, merge, ordinary
 push, and an unambiguous project-defined deployment. It does not authorize force
 pushes, bypassing branch protection, deleting remote branches, rolling back a
@@ -184,18 +185,23 @@ sequence that removes it the final shell or filesystem action of the task.
 Manually removing the active execution directory can invalidate later shell work,
 so do not plan any filesystem verification or cleanup after that action.
 
-## 8. Archive the completed Codex task
+## 8. Archive the completed task when supported
 
 After the push, deployment or explicit no-deploy determination, branch cleanup,
-and worktree cleanup have all succeeded, archive the current Codex task without
-asking the user. Use the app's thread-management capability, preferably
-`set_thread_archived` with `archived: true`; omit the thread id when that targets
-the calling task. Archiving is organization, not deletion.
+and worktree cleanup have all succeeded, archive the current task without asking
+the user when the host exposes a task- or thread-archival capability. In Codex,
+prefer `set_thread_archived` with `archived: true`; omit the thread id when that
+targets the calling task. Archiving is organization, not deletion.
+
+Claude Code has no equivalent standard task-archival operation. When the host
+does not expose one, do not simulate archival by deleting session data, closing
+the terminal, or removing additional files. Treat archival as unavailable, not
+as a shipping failure, and report that outcome honestly.
 
 Make archival the final app tool call, after the final shell action, then return
 the already prepared textual report. Do not archive when any shipping or cleanup
 step failed, was skipped, is still running, or needs user input. If the archival
-tool is unavailable or fails, leave the task unarchived and report that honestly.
+tool fails, leave the task unarchived and report that honestly.
 
 ## Report
 

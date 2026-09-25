@@ -8,12 +8,12 @@ usage() {
   cat <<'EOF'
 Usage:
   bin/skills list
-  bin/skills link-global <skill-name>
-  bin/skills link-project <skill-name> [project-directory]
+  bin/skills link-global <skill-name> [--agent codex|claude|all]
+  bin/skills link-project <skill-name> [project-directory] [--agent codex|claude|all]
 
-Global links are created in ${CODEX_HOME:-$HOME/.codex}/skills.
-Project links are created in <project>/.agents/skills and locally excluded
-from Git when the project is a Git working tree.
+The default agent is codex. Codex links use ~/.codex/skills globally and
+.agents/skills in a project. Claude links use ~/.claude/skills globally and
+.claude/skills in a project. Project links are locally excluded from Git.
 EOF
 }
 
@@ -59,6 +59,7 @@ create_link() {
 exclude_project_link() {
   local project_root="$1"
   local skill_name="$2"
+  local skills_directory="$3"
   local exclude_file pattern
 
   if ! git -C "$project_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -66,7 +67,7 @@ exclude_project_link() {
   fi
 
   exclude_file="$(git -C "$project_root" rev-parse --path-format=absolute --git-path info/exclude)"
-  pattern="/.agents/skills/$skill_name"
+  pattern="/$skills_directory/$skill_name"
   mkdir -p "$(dirname "$exclude_file")"
   touch "$exclude_file"
 
@@ -74,6 +75,55 @@ exclude_project_link() {
     printf '\n%s\n' "$pattern" >> "$exclude_file"
     echo "Locally excluded from Git: $pattern"
   fi
+}
+
+validate_agent() {
+  case "$1" in
+    codex|claude|all) ;;
+    *)
+      echo "Unknown agent: $1 (expected codex, claude, or all)" >&2
+      exit 2
+      ;;
+  esac
+}
+
+link_global() {
+  local skill_name="$1"
+  local agent="$2"
+
+  case "$agent" in
+    codex)
+      create_link "$skill_source" "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
+      ;;
+    claude)
+      create_link "$skill_source" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/$skill_name"
+      ;;
+    all)
+      link_global "$skill_name" codex
+      link_global "$skill_name" claude
+      ;;
+  esac
+}
+
+link_project() {
+  local skill_name="$1"
+  local project_root="$2"
+  local agent="$3"
+
+  case "$agent" in
+    codex)
+      create_link "$skill_source" "$project_root/.agents/skills/$skill_name"
+      exclude_project_link "$project_root" "$skill_name" ".agents/skills"
+      ;;
+    claude)
+      create_link "$skill_source" "$project_root/.claude/skills/$skill_name"
+      exclude_project_link "$project_root" "$skill_name" ".claude/skills"
+      ;;
+    all)
+      link_project "$skill_name" "$project_root" codex
+      link_project "$skill_name" "$project_root" claude
+      ;;
+  esac
 }
 
 command_name="${1:-}"
@@ -88,15 +138,43 @@ case "$command_name" in
       | LC_ALL=C sort
     ;;
   link-global)
-    [[ $# -eq 2 ]] || { usage >&2; exit 2; }
+    [[ $# -eq 2 || $# -eq 4 ]] || { usage >&2; exit 2; }
     require_skill "$2"
-    codex_home="${CODEX_HOME:-$HOME/.codex}"
-    create_link "$skill_source" "$codex_home/skills/$2"
+    agent="codex"
+    if [[ $# -eq 4 ]]; then
+      [[ "$3" == "--agent" ]] || { usage >&2; exit 2; }
+      agent="$4"
+    fi
+    validate_agent "$agent"
+    link_global "$2" "$agent"
     ;;
   link-project)
-    [[ $# -ge 2 && $# -le 3 ]] || { usage >&2; exit 2; }
-    require_skill "$2"
-    project_input="${3:-.}"
+    [[ $# -ge 2 ]] || { usage >&2; exit 2; }
+    selected_skill="$2"
+    require_skill "$selected_skill"
+    shift 2
+    project_input="."
+    project_input_set=false
+    agent="codex"
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --agent)
+          [[ $# -ge 2 ]] || { usage >&2; exit 2; }
+          agent="$2"
+          shift 2
+          ;;
+        *)
+          if [[ "$project_input_set" == true ]]; then
+            usage >&2
+            exit 2
+          fi
+          project_input="$1"
+          project_input_set=true
+          shift
+          ;;
+      esac
+    done
+    validate_agent "$agent"
     if [[ ! -d "$project_input" ]]; then
       echo "Project directory does not exist: $project_input" >&2
       exit 2
@@ -106,8 +184,7 @@ case "$command_name" in
     else
       project_root="$(cd "$project_input" && pwd -P)"
     fi
-    create_link "$skill_source" "$project_root/.agents/skills/$2"
-    exclude_project_link "$project_root" "$2"
+    link_project "$selected_skill" "$project_root" "$agent"
     ;;
   -h|--help|help|"")
     usage
