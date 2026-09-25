@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ship"
+  short_description: "Land, deploy, clean up, and archive"
+  default_prompt: "Use $ship to land and deploy the current session changes, clean up, and archive the completed task."

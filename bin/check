@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+toolbox_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+skills_root="$toolbox_root/skills"
+count=0
+
+for skill_dir in "$skills_root"/*; do
+  [[ -d "$skill_dir" ]] || continue
+  skill_name="$(basename "$skill_dir")"
+  manifest="$skill_dir/SKILL.md"
+
+  if [[ ! -f "$manifest" ]]; then
+    echo "Missing SKILL.md: $skill_dir" >&2
+    exit 1
+  fi
+
+  python3 - "$manifest" "$skill_name" <<'PY'
+import pathlib
+import re
+import sys
+
+path = pathlib.Path(sys.argv[1])
+directory_name = sys.argv[2]
+text = path.read_text(encoding="utf-8")
+
+match = re.match(r"\A---\s*\n(.*?)\n---\s*(?:\n|\Z)", text, re.DOTALL)
+if not match:
+    raise SystemExit(f"{path}: missing YAML frontmatter")
+
+frontmatter = match.group(1)
+name_match = re.search(r"(?m)^name:\s*[\"']?([^\"'\n]+)[\"']?\s*$", frontmatter)
+description_match = re.search(r"(?m)^description:\s*(?:\S|[>|])", frontmatter)
+
+if not name_match:
+    raise SystemExit(f"{path}: missing name")
+
+manifest_name = name_match.group(1).strip()
+if manifest_name != directory_name:
+    raise SystemExit(
+        f"{path}: name {manifest_name!r} does not match directory {directory_name!r}"
+    )
+
+if not description_match:
+    raise SystemExit(f"{path}: missing description")
+PY
+
+  count=$((count + 1))
+  echo "OK: $skill_name"
+done
+
+if [[ $count -eq 0 ]]; then
+  echo "No skills found in $skills_root" >&2
+  exit 1
+fi
+
+echo "Validated $count skill(s)."
