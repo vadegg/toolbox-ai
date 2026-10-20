@@ -9,6 +9,10 @@ for Codex, Claude Code, or both, either globally or only for a selected project.
 ```text
 toolbox-ai/
 ├── skills/
+│   ├── orchestrator-chat/
+│   │   ├── SKILL.md
+│   │   ├── assets/
+│   │   └── scripts/
 │   └── ship/
 │       ├── SKILL.md
 │       └── agents/openai.yaml
@@ -53,6 +57,16 @@ appear in `git status` and cannot be committed accidentally.
 If a project-local skill should be shared with every contributor, copy it into
 the agent's project skill directory and commit that copy instead of using a
 personal link.
+
+`orchestrator-chat` (Claude Code only) turns one long-lived chat into a project's
+orchestrator. Its prompt lives in `<project>/orchestrator/PROMPT.md`, bound to one chat by
+`orchestrator/session-id`, and `scripts/inject-prompt.sh`, registered once as global
+`SessionStart` and `UserPromptSubmit` hooks, re-injects it after compaction and on edits.
+Link it for Claude only:
+
+```bash
+./bin/skills link-global orchestrator-chat --agent claude
+```
 
 ## Update
 
