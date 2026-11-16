@@ -3,9 +3,8 @@ name: ship
 description: >-
   Use when the user asks to ship the current session's changes: commit them,
   land them on the repository mainline, push, deploy when the project defines a
-  deployment, clean up safely, and archive the completed task when the host
-  supports task archiving — for example "ship", "ship it", "отгрузи", "отгрузи
-  и задеплой", or "влей, запушь и выкати".
+  deployment, and clean up safely — for example "ship", "ship it", "отгрузи",
+  "отгрузи и задеплой", or "влей, запушь и выкати".
 ---
 
 # Ship
@@ -185,24 +184,6 @@ sequence that removes it the final shell or filesystem action of the task.
 Manually removing the active execution directory can invalidate later shell work,
 so do not plan any filesystem verification or cleanup after that action.
 
-## 8. Archive the completed task when supported
-
-After the push, deployment or explicit no-deploy determination, branch cleanup,
-and worktree cleanup have all succeeded, archive the current task without asking
-the user when the host exposes a task- or thread-archival capability. In Codex,
-prefer `set_thread_archived` with `archived: true`; omit the thread id when that
-targets the calling task. Archiving is organization, not deletion.
-
-Claude Code has no equivalent standard task-archival operation. When the host
-does not expose one, do not simulate archival by deleting session data, closing
-the terminal, or removing additional files. Treat archival as unavailable, not
-as a shipping failure, and report that outcome honestly.
-
-Make archival the final app tool call, after the final shell action, then return
-the already prepared textual report. Do not archive when any shipping or cleanup
-step failed, was skipped, is still running, or needs user input. If the archival
-tool fails, leave the task unarchived and report that honestly.
-
 ## Report
 
 Keep the handoff compact but auditable:
@@ -215,8 +196,7 @@ Keep the handoff compact but auditable:
   not applicable;
 - conflicts resolved or the exact blocker;
 - local source-branch cleanup result;
-- worktree cleanup result;
-- task archival result.
+- worktree cleanup result.
 
-Do not imply that a push, deployment, cleanup, or archival succeeded when it was
-skipped, still running, or failed.
+Do not imply that a push, deployment, or cleanup succeeded when it was skipped,
+still running, or failed.
