@@ -9,6 +9,11 @@ for Codex, Claude Code, or both, either globally or only for a selected project.
 ```text
 toolbox-ai/
 ├── skills/
+│   ├── macos-efficiency-audit/
+│   │   ├── SKILL.md
+│   │   ├── agents/openai.yaml
+│   │   ├── references/
+│   │   └── scripts/
 │   ├── orchestrator-chat/
 │   │   ├── SKILL.md
 │   │   ├── assets/
@@ -66,6 +71,22 @@ Link it for Claude only:
 
 ```bash
 ./bin/skills link-global orchestrator-chat --agent claude
+```
+
+## Skill settings
+
+`macos-efficiency-audit` audits a Mac (processes, startup items, leftovers of
+removed apps, disk space, system health) and cleans up one confirmed group at a
+time. It never deletes: removals go to the Trash through `scripts/trash.sh`, and
+root-owned items become a command for you to run. The scripts in `scripts/` are
+plain Bash and Python 3 with no dependencies and can be used on their own:
+
+```bash
+skills/macos-efficiency-audit/scripts/snapshot.sh
+skills/macos-efficiency-audit/scripts/procs.py --live
+skills/macos-efficiency-audit/scripts/launchd_audit.py
+skills/macos-efficiency-audit/scripts/leftovers.py --min-mb 20
+skills/macos-efficiency-audit/scripts/disk_report.sh --quick
 ```
 
 ## Update

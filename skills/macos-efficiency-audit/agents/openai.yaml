@@ -1,0 +1,4 @@
+interface:
+  display_name: "macOS efficiency audit"
+  short_description: "Audit a Mac and clean it up safely"
+  default_prompt: "Use $macos-efficiency-audit to audit this Mac's performance, startup items, leftovers of removed apps and disk space, report what wastes resources, and clean up with my confirmation at every step."
